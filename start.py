@@ -17,7 +17,7 @@ def depth_first_search(graph, source, sink, discovered, max_flow):
     current = source
     if source == sink:
         return max_flow, discovered
-    for all i in range(current, numV):
+    for all i in range(current, len(graph[0])):
         if graph[current][i] > 0:
             if graph[current][i] not in discovered:
                 current = i
@@ -29,10 +29,14 @@ def ford_fulkerson(graph, source, sink):
     discovered = []
     update = graph
     flow = 0
-    add, path = depth_first_search(graph, source, sink, discovered, max_flow)
-    if add > 0:
-        flow += add
-        for i in range(len(path)-1):
-            update[path[i]][path[i+1]] -= add
-            update[path[i]][path[i+1]] += add
+    maxed = False
+    while not maxed:
+        add, path = depth_first_search(graph, source, sink, discovered, max_flow)
+        if add > 0:
+            flow += add
+            for i in range(len(path)-1):
+                update[path[i]][path[i+1]] -= add
+                update[path[i]][path[i+1]] += add
+        else:
+            maxed = True
     return flow       
