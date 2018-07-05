@@ -12,26 +12,26 @@ def generate_random_graph(numV, p, max_flow):
     sink = np.random.randint(0, numV-1)
     return graph, source, sink
 
-def depth_first_search(graph, source, sink, discovered, max_flow):
+def depth_first_search(graph, source, sink, discovered):
     discovered.append(source)
     if source == sink:
-        return max_flow, discovered
+        return np.infty, discovered
     for i in range(len(graph[0])):
         if graph[source][i] > 0:
             if i not in discovered:
-                found, discovered = depth_first_search(graph, i, sink, discovered, max_flow)
+                found, discovered = depth_first_search(graph, i, sink, discovered)
                 if found != -1:
                     return min(found, graph[source][i]), discovered
     discovered.pop()
     return -1, discovered
 
-def ford_fulkerson(graph, source, sink, max_flow):
-    update = graph
+def ford_fulkerson(graph, source, sink):
+    update = [element.copy() for element in graph]
     flow = 0
     maxed = False
     while not maxed:
         discovered = []
-        add, path = depth_first_search(update, source, sink, discovered, max_flow)
+        add, path = depth_first_search(update, source, sink, discovered)
         if add > 0:
             flow += add
             for i in range(len(path)-1):
@@ -41,9 +41,39 @@ def ford_fulkerson(graph, source, sink, max_flow):
             maxed = True
     return flow       
 
+def edmonds_karp(graph, source, sink):
+    update = [element.copy() for element in graph]
+    end = False
+    flow = 0
+    while not end:
+        queue = [source]
+        path = [None] * len(update[0])
+        while len(queue) > 0:
+            current = queue.pop(0)
+            for i in range(0, len(update[0])):
+                if ((path[i] == None) and (i != source) and (update[current][i] > 0)):
+                    path[i] = current
+                    queue.append(i)
+        if path[sink] != None:
+            df = np.infty
+            t = sink
+            while t != source:
+                df = min(df, update[path[t]][t])
+                t = path[t]
+            flow += df
+            t = sink
+            while t != source:
+                update[path[t]][t] -= df
+                update[t][path[t]] += df
+                t = path[t]
+        else:
+            end = True
+    return flow
 ex_graph = [[0, 1, 1, 1], [1, 0, 1, 0], [1, 1, 0, 1], [1, 0, 1, 0]]
 source = 1
 sink = 3
-max_flow = 10
 
-print(ford_fulkerson(ex_graph, source, sink, 10))
+print(ford_fulkerson(ex_graph, source, sink))
+print(ex_graph)
+print(edmonds_karp(ex_graph, source, sink))
+print(ex_graph)
