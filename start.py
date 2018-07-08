@@ -3,11 +3,11 @@ import numpy as np
 def generate_random_graph(numV, p, max_flow):
     graph = np.zeros((numV, numV))
     for i in range(numV):
-        for j in range(i+1, numV):
+        for j in range(numV):
             random = np.random.rand()
             if random > p:
                 graph[i][j] = np.random.randint(1, max_flow)
-                graph[j][i] = graph[i][j]
+                graph[j][i] = 0
     source = np.random.randint(0, numV)
     sink = np.random.randint(0, numV-1)
     return graph, source, sink
@@ -69,11 +69,13 @@ def edmonds_karp(graph, source, sink):
         else:
             end = True
     return flow
-ex_graph = [[0, 1, 1, 1], [1, 0, 1, 0], [1, 1, 0, 1], [1, 0, 1, 0]]
-source = 1
-sink = 3
 
-print(ford_fulkerson(ex_graph, source, sink))
-print(ex_graph)
-print(edmonds_karp(ex_graph, source, sink))
-print(ex_graph)
+if __name__ == "__main__":
+    ex_graph = [[0, 1, 1, 1], [1, 0, 1, 0], [1, 1, 0, 1], [1, 0, 1, 0]]
+    source = 1
+    sink = 3
+
+    print(ford_fulkerson(ex_graph, source, sink))
+    print(ex_graph)
+    print(edmonds_karp(ex_graph, source, sink))
+    print(ex_graph)
