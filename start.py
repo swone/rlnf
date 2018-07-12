@@ -4,13 +4,11 @@ def generate_random_graph(numV, p, max_flow):
     graph = np.zeros((numV, numV))
     for i in range(numV):
         for j in range(numV):
-            random = np.random.rand()
-            if random > p:
-                graph[i][j] = np.random.randint(1, max_flow)
-                graph[j][i] = 0
-    source = np.random.randint(0, numV)
-    sink = np.random.randint(0, numV-1)
-    return graph, source, sink
+            if i != j:
+                random = np.random.rand()
+                if random < p:
+                    graph[i][j] = np.random.randint(1, max_flow)
+    return graph
 
 def depth_first_search(graph, source, sink, discovered):
     discovered.append(source)
@@ -25,7 +23,9 @@ def depth_first_search(graph, source, sink, discovered):
     discovered.pop()
     return -1, discovered
 
-def ford_fulkerson(graph, source, sink):
+def ford_fulkerson(graph):
+    source = 0
+    sink = len(graph[0])-1
     update = [element.copy() for element in graph]
     flow = 0
     maxed = False
@@ -41,7 +41,9 @@ def ford_fulkerson(graph, source, sink):
             maxed = True
     return flow       
 
-def edmonds_karp(graph, source, sink):
+def edmonds_karp(graph):
+    source = 0
+    sink = len(graph[0])-1
     update = [element.copy() for element in graph]
     end = False
     flow = 0
@@ -75,7 +77,7 @@ if __name__ == "__main__":
     source = 1
     sink = 3
 
-    print(ford_fulkerson(ex_graph, source, sink))
+    print(ford_fulkerson(ex_graph))
     print(ex_graph)
-    print(edmonds_karp(ex_graph, source, sink))
+    print(edmonds_karp(ex_graph))
     print(ex_graph)
