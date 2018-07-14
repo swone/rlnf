@@ -9,8 +9,23 @@ def relu(x):
 
 def generate_data(sample_size):
     data = []
-    for i in range(sample_size):
+    for i in range(int(sample_size/4)):
         x = start.generate_random_graph(5, 0.8, 10)
+        y = start.edmonds_karp(x)
+        x.shape = ([1, 25])
+        data.append((x, y))
+    for i in range(int(sample_size/4)):
+        x = start.generate_random_graph(5, 0.6, 10)
+        y = start.edmonds_karp(x)
+        x.shape = ([1, 25])
+        data.append((x, y))
+    for i in range(int(sample_size/4)):
+        x = start.generate_random_graph(5, 0.4, 10)
+        y = start.edmonds_karp(x)
+        x.shape = ([1, 25])
+        data.append((x, y))
+    for i in range(int(sample_size/4)):
+        x = start.generate_random_graph(5, 0.2, 10)
         y = start.edmonds_karp(x)
         x.shape = ([1, 25])
         data.append((x, y))
@@ -35,8 +50,8 @@ class Network(object):
         if test_data: n_test = len(test_data)
         n = len(training_data)
         for j in range(epochs):
-            if j%15 == 14:
-                eta/=3
+            if j==20:
+                eta/=10
             random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
@@ -73,7 +88,12 @@ class Network(object):
         activation = x
         activations = [x]
         zs = []
+        #masks = []
         for b, w in zip(self.biases, self.weights):
+            """if len(activations) > 1:
+                u = np.random.binomial(1, 0.8, activation.shape)/0.8
+                activation *= u
+                masks.append(u)"""
             z = np.dot(activation, w)+b
             zs.append(z)
             activation = relu(z)
@@ -91,8 +111,10 @@ class Network(object):
                     else:
                         derv[i][j] = 0
             delta = np.dot(delta, self.weights[-l+1].transpose())* derv
+        #    if l < self.num_layers-1:
+        #        delta *= masks[-l+1]
             nabla_b[-l] = delta
-            nabla_w[-l] = np.dot(activations[-l-1].transpose(), delta)#+0.1*self.weights[-l]/(len(self.weights[-1])*len(self.weights[-l][0]))
+            nabla_w[-l] = np.dot(activations[-l-1].transpose(), delta)
         return(nabla_b, nabla_w)
 
     def evaluate(self, test_data):
@@ -101,10 +123,10 @@ class Network(object):
         return sum(round(x[0][0]) == y for (x, y) in test_results)
 
 
-net = Network([25, 50, 50, 1])
+net = Network([25, 50, 50, 25, 1])
 
-training_data  = generate_data(5000)
-test_data = generate_data(500)
+training_data  = generate_data(20000)
+test_data = generate_data(1000)
 
 net.SGD(training_data, 50, 50, 0.001, test_data=test_data)
 
