@@ -1,25 +1,23 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 import start
 
-ex_graph = [[0, 3, 0, 3, 0, 0, 0], [0, 0, 4, 0, 0, 0, 0], [3, 0, 0, 1, 2, 0, 0], 
-        [0, 0, 0, 0, 2, 6, 0], [0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 9], [0, 0, 0, 0, 0, 0, 0]]
-source = 0
-sink = 6
-
-ex_graph_1, source_1, sink_1 = start.generate_random_graph(10, 0.6, 15)
-
-print(start.ford_fulkerson(ex_graph_1, source_1, sink_1))
-print(start.edmonds_karp(ex_graph_1, source_1, sink_1))
-
 class flow_graph():
-    def __init__(self, graph, source, sink):
+    def __init__(self, graph):
         self.graph = graph
+        for i in range(len(self.graph[0])):
+            for j in range(len(self.graph[0])):
+                if j == len(self.graph[0])-1:
+                    self.graph[i][j] = 1
+                else:
+                    if self.graph[i][j] == 0:
+                        self.graph[i][j] = -1
+                    else:
+                        self.graph[i][j] = 0
         self.net_flow = [0]*len(graph[0])
-        self.source = source
-        self.sink = sink
-        self.current = source
+        self.source = 0
+        self.sink = len(graph[0])-1
+        self.current = self.source
         self.score = np.infty
 
     def getState(self):
@@ -37,56 +35,133 @@ class flow_graph():
             return -1    
 
 class agent():
-    def __init__(self, lr):
-        self.state_in = tf.placeholder(shape=[10, 10], dtype = tf.int32)
-        output = slim.fully_connected(state_in, 10, biases_intitalizer=None,
-                activaation_fn = tf.nn.sigmoid, weights_initializer=tf.one_initializer())
-        self.output = tf.reshape(output, [-1])
-        self.chosen_action = tf.argmax(self.output, 0)
+    def __init__(self, lr, gamma, fgraph, rgraph):
+        self.gamma = gamma
+        self.flow_graph = fgraph
+        self.reward_graph = rgraph
+        self.q = np.zeros([10, 10])
+        self.current = 0
+        self.sink = 9
+        self.temp_graph = np.copy(self.flow_graph)
 
-        self.reward_holder = tf.placeholder(shape=[1], dtype=tf.float32)
-        self.action_holder = tf.placeholder(shape=[1], dtype=tf.int32)
-        self.responsible_weight = tf.slice(self.output, self.action_holder, [1])
-        self.loss = -(tf.log(self.responsible_weight)*self.reward_holder)
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate = lr)
-        self.update = optimizer.minimize(self.loss)
+    def update(self):
+        maxf = 0
+        end = False
+        v = 0
+        path = [0]
+        while not end:
+            valid = False
+            check = 0
+            for j in range(10):
+                if self.reward_graph[self.current][j] > -1:
+                    check+=1
+            if check == 0:
+                return maxf
+            while not valid:
+                i = np.random.randint(0, 10)
+                if self.reward_graph[self.current][i] > -1:
+                    valid = True
+            maxq = 0
+            v+=1
+            path.append(i)
+            for j in range(10):
+                if self.reward_graph[i][j] > -1:
+                    if self.q[i][j] > maxq:
+                        maxq = self.q[i][j]
+            self.q[self.current][i] = self.reward_graph[self.current][i]+self.gamma*maxq
+            if i == self.sink:
+                self.current = 0
+                v = 0
+                path = [0]
+                minf = 15
+                for x in range(len(path)-1):
+                    minf = min(minf, self.flow_graph[path[x]][path[x+1]])
+                maxf+=minf
+                for x in range(len(path)-1):
+                    self.flow_graph[path[x]][path[x+1]] -= minf
+                    self.flow_graph[path[x+1]][path[x]] += minf
+                for i in range(len(self.flow_graph[0])):
+                    for j in range(len(self.flow_graph[0])):
+                        if self.flow_graph[i][j] > 0:
+                            if j == 9:
+                                self.reward_graph[i][j] = 1
+                            else:
+                                self.reward_graph[i][j] = 0
+                        else:
+                            self.reward_graph[i][j] = -1
+                else:
+                    self.current = i
+            if v > 10:
+                end = True
+        return maxf
 
-tf.reset_default_graph()
-
-fGraph = flow_graph()
-jBond = agent(lr = 0.001)
-weights = tf.trainable_variables()[0]
-
-total_episodes = 10000
-total_reward = np.zeros([1])
-e = 0.1
-
-with tf.Session() as sess:
-    sess.run(init)
-    i = 0
-    while i < total_episodes:
-        s = fGraph.getState()
-
-        if np.random.rand(1) < e:
-            action = np.random.rand(1)
+episodes = 500
+ex_graph_1 = start.generate_random_graph(10, 0.4, 15)
+print(start.edmonds_karp(ex_graph_1))
+done = False
+maxf = 0
+graph = np.zeros([10, 10])
+for i in range(len(graph[0])):
+    for j in range(len(graph[0])):
+        if ex_graph_1[i][j] > 0:
+            if j == 9:
+                graph[i][j] = 1
+            else:
+                graph[i][j] = 0
         else:
-            action = sess.run(jBond.chosen_action, 
-                feed_dict={jBond.state_in:[s]})
-        reward = fGraph.getMove(action)
+            graph[i][j] = -1
+    bond = agent(1, 0.9, ex_graph_1, graph)
+    for i in range(episodes):
+        bond.update()
+    current = 0
+    maxq = 0
+    maxi = 0
+    fin = False
+    path = [0]
+    count = 0
+    for k in range(10):
+        if bond.q[k][9] != 0:
+            count+=1
+    if count == 0:
+        break
+    while not fin:
+        for i in range(10):
+            if(bond.q[current][i] > maxq):
+                maxq = bond.q[current][i]
+                maxi = i
+        path.append(maxi)
+        if maxi == 9:
+            fin = True
+        else:
+            current = maxi
+    """minf = 15
+    for x in range(len(path)-1):
+        minf = min(minf, ex_graph_1[path[x]][path[x+1]])
+    maxf+=minf
+    for x in range(len(path)-1):
+        ex_graph_1[path[x]][path[x+1]] -= minf
+        ex_graph_1[path[x+1]][path[x]] += minf
+    """
 
-        feed_dict = {jBond.reward_holder:[reward], 
-            jBond.action_holder:[action], jBond.state_in:[s]}
-        _,ww = sess.run([jBond.update, weights], feed_dict=feed_dict)
+state_size = [10, 10]
+action_size = [10, 10]
+learning_rate = 0.001
 
-        total_rewards[s, action] += reward
-        if i % 500 == 0:
-            
+total_episodes = 1000
+max_steps = 200
+batch_size = 32
 
+explore_start = 1.0
+explore_stop = 0.01
+decay_rate = 0.0001
 
-"""def game(numV):
-    start.generate_random_graph(numV, 0.6, 15)
-    net_flow = [0]*numV
-    finish = False
-    while not finish:
-        print("Move")
-"""
+gamma = 0.95
+
+pretrain_length = batch_size
+memory_size = 10000
+
+training = True
+
+episode_render = False
+
+print(maxf)

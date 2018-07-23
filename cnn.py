@@ -12,31 +12,31 @@ def generate_data(sample_size):
     return data
 
 learning_rate = 0.0001
-epochs = 30
+epochs = 200
 batch_size = 50
 
 x = tf.placeholder(tf.float32, [None, 10, 10])
 x_shaped = tf.reshape(x, [-1, 10, 10, 1])
 y = tf.placeholder(tf.float32, [None, 1])
 
-w1 = tf.Variable(tf.truncated_normal([5, 5, 1, 32], stddev=0.03), name='w1')
-b1 = tf.Variable(tf.truncated_normal([32]), name='b1')
+w1 = tf.Variable(tf.truncated_normal([5, 5, 1, 16], stddev=0.03), name='w1')
+b1 = tf.Variable(tf.truncated_normal([16]), name='b1')
 out1 = tf.nn.conv2d(x_shaped, w1, [1, 1, 1, 1], padding='SAME')
 out1 += b1
 out1 = tf.nn.relu(out1)
 out1 = tf.nn.max_pool(out1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-w2 = tf.Variable(tf.truncated_normal([5, 5, 32, 64], stddev=0.03), name='w2')
-b2 = tf.Variable(tf.truncated_normal([64]), name='b2')
+w2 = tf.Variable(tf.truncated_normal([5, 5, 16, 32], stddev=0.03), name='w2')
+b2 = tf.Variable(tf.truncated_normal([32]), name='b2')
 out2 = tf.nn.conv2d(out1, w2, [1, 1, 1, 1], padding='SAME')
 out2 += b2
 out2 = tf.nn.relu(out2)
 out2 = tf.nn.max_pool(out1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME')
-flattened = tf.reshape(out2, [-1, 800])
-wd = tf.Variable(tf.truncated_normal([800, 1000], stddev=0.03), name='wd')
+flattened = tf.reshape(out2, [-1, 400])
+wd = tf.Variable(tf.truncated_normal([400, 1000], stddev=0.03), name='wd')
 bd = tf.Variable(tf.truncated_normal([1000], stddev=0.01), name='bd')
 dense = tf.matmul(flattened, wd) + bd
 dense = tf.nn.relu(dense)
-wout = tf.Variable(tf.truncated_normal([800, 1], stddev=0.03), name='wd')
+wout = tf.Variable(tf.truncated_normal([400, 1], stddev=0.03), name='wd')
 bout = tf.Variable(tf.truncated_normal([1], stddev=0.01), name='bd')
 output = tf.matmul(flattened, wout) + bout
 output = tf.nn.relu(output)
