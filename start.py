@@ -8,6 +8,8 @@ def generate_random_graph(numV, p, max_flow):
                 random = np.random.rand()
                 if random < p:
                     graph[i][j] = np.random.randint(1, max_flow)
+    if edmonds_karp(graph) == 0:
+        graph = generate_random_graph(numV, p, max_flow)
     return graph
 
 def depth_first_search(graph, source, sink, discovered):

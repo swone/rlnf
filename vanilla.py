@@ -125,8 +125,8 @@ class Network(object):
 
 net = Network([25, 50, 50, 25, 1])
 
-training_data  = generate_data(20000)
+training_data  = generate_data(100000)
 test_data = generate_data(1000)
 
-net.SGD(training_data, 50, 50, 0.001, test_data=test_data)
+net.SGD(training_data, 500, 50, 0.001, test_data=test_data)
 
